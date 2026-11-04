@@ -110,6 +110,197 @@
     #startBtn { margin-top: 48px; font-size: 16px; opacity: 0; pointer-events: none; transition: opacity 0.5s 0.6s; }
     #startBtn.show { opacity: 1; pointer-events: auto; }
 
+    /* ================= PRESS START 연출 (FPS 출격 화면) ================= */
+    #deploy { position: fixed; inset: 0; z-index: 100; display: none; pointer-events: none; overflow: hidden; }
+    #deploy.on { display: block; pointer-events: auto; }
+    /* 방폭문: 위·아래 두 짝이 닫혀 있다가 갈라지며 열림 */
+    .door { position: absolute; left: 0; right: 0; height: 50.5%; background: #05080f; transition: transform 0.6s cubic-bezier(.7,0,.3,1); }
+    .door::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; background: var(--cyan); box-shadow: 0 0 18px var(--cyan); }
+    .door-top { top: 0; } .door-top::after { bottom: 0; }
+    .door-bottom { bottom: 0; } .door-bottom::after { top: 0; }
+    .door-top { background-image: repeating-linear-gradient(135deg, transparent 0 18px, rgba(34,211,238,0.05) 18px 20px); }
+    .door-bottom { background-image: repeating-linear-gradient(45deg, transparent 0 18px, rgba(34,211,238,0.05) 18px 20px); }
+    #deploy.open .door-top { transform: translateY(-101%); }
+    #deploy.open .door-bottom { transform: translateY(101%); }
+
+    /* 가운데 HUD: 조준선 + 문구 */
+    .hud { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.25s; }
+    #deploy.open .hud { opacity: 0; }
+    .crosshair { width: 150px; height: 150px; color: var(--cyan); animation: aim 0.55s cubic-bezier(.2,1.4,.4,1) both; }
+    @keyframes aim { 0% { transform: scale(3) rotate(-90deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+    .crosshair .ring { animation: spin 2.4s linear infinite; transform-origin: 50% 50%; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .mission {
+      margin-top: 18px; font-size: clamp(34px, 8vw, 72px); font-weight: 900; font-style: italic; letter-spacing: 4px; color: #fff;
+      text-shadow: 3px 0 var(--cyan), -3px 0 #ef4444; animation: slam 0.45s cubic-bezier(.2,1.6,.4,1) 0.35s both;
+    }
+    @keyframes slam { 0% { transform: scale(2.8); opacity: 0; filter: blur(6px); } 100% { transform: scale(1); opacity: 1; filter: none; } }
+    .mission-sub { margin-top: 8px; font-size: 13px; font-weight: bold; letter-spacing: 5px; color: var(--cyan); animation: fadeIn 0.4s ease 0.7s both; }
+    .deploy-bar { width: min(320px, 70vw); height: 4px; background: var(--empty); margin-top: 22px; overflow: hidden; }
+    .deploy-bar i { display: block; height: 100%; width: 0; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); animation: load 0.9s ease-in 0.5s forwards; }
+    @keyframes load { to { width: 100%; } }
+    /* 화면 네 귀퉁이 FPS 정보 */
+    .hud-corner { position: absolute; font-size: 11px; font-weight: bold; letter-spacing: 2px; color: var(--cyan); opacity: 0.8; animation: fadeIn 0.3s ease 0.2s both; }
+    .hc-tl { top: 20px; left: 20px; } .hc-tr { top: 20px; right: 20px; text-align: right; }
+    .hc-bl { bottom: 20px; left: 20px; } .hc-br { bottom: 20px; right: 20px; text-align: right; }
+    .hud-corner b { display: block; font-size: 22px; color: #fff; letter-spacing: 1px; }
+    #deploy.open .hud-corner { opacity: 0; transition: opacity 0.2s; }
+    @media (max-width: 760px) {
+      .mission-sub { font-size: 11px; letter-spacing: 2px; text-align: center; padding: 0 16px; }
+      .crosshair { width: 120px; height: 120px; }
+    }
+    /* 번쩍이는 섬광 */
+    .flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+    #deploy.on .flash { animation: flash-bang 0.35s ease-out; }
+    @keyframes flash-bang { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+
+    /* 화면 흔들림 */
+    .shake-hard { animation: shake-hard 0.5s linear; }
+    .shake-soft { animation: shake-soft 0.3s linear; }
+    @keyframes shake-hard {
+      10% { transform: translate(-10px, 6px) rotate(-1deg); } 20% { transform: translate(9px, -8px) rotate(1deg); }
+      30% { transform: translate(-8px, -4px); } 40% { transform: translate(7px, 6px) rotate(0.5deg); }
+      55% { transform: translate(-5px, 3px); } 70% { transform: translate(4px, -3px); } 85% { transform: translate(-2px, 1px); } 100% { transform: none; }
+    }
+    @keyframes shake-soft {
+      20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -2px); } 60% { transform: translate(-3px, -1px); } 80% { transform: translate(2px, 1px); } 100% { transform: none; }
+    }
+
+    /* 출격 후 패널 조립: 사방에서 날아와 '철컥' 맞물림 (트랜스포머 느낌) */
+    .assemble .topbar { animation: dropIn 0.5s cubic-bezier(.2,1.3,.4,1) 0.05s both; }
+    .assemble .main > .panel:first-child { animation: flyLeft 0.75s cubic-bezier(.2,1.25,.35,1) 0.15s both; }
+    .assemble .main > .panel:last-child { animation: flyRight 0.75s cubic-bezier(.2,1.25,.35,1) 0.3s both; }
+    .assemble .menu-item { animation: flyUp 0.6s cubic-bezier(.2,1.3,.4,1) both; }
+    .assemble .menu-item:nth-child(1) { animation-delay: 0.55s; }
+    .assemble .menu-item:nth-child(2) { animation-delay: 0.65s; }
+    .assemble .menu-item:nth-child(3) { animation-delay: 0.75s; }
+    @keyframes flyLeft {
+      0% { transform: translateX(-110vw) rotate(-12deg) skewX(15deg); clip-path: inset(48% 0 48% 0); filter: brightness(3); }
+      60% { transform: translateX(3%) rotate(1deg); clip-path: inset(0 0 0 0); }
+      100% { transform: none; filter: none; }
+    }
+    @keyframes flyRight {
+      0% { transform: translateX(110vw) rotate(12deg) skewX(-15deg); clip-path: inset(48% 0 48% 0); filter: brightness(3); }
+      60% { transform: translateX(-3%) rotate(-1deg); clip-path: inset(0 0 0 0); }
+      100% { transform: none; filter: none; }
+    }
+    @keyframes flyUp { 0% { transform: translateY(80px) scale(0.85); opacity: 0; } 100% { transform: none; } }
+    @keyframes dropIn { 0% { transform: translateY(-60px); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+    /* ================= 기록 선택 창 (SELECT 누르면 열리는 새 창) ================= */
+    #loadout {
+      position: fixed; inset: 0; z-index: 90; display: none; overflow-y: auto;
+      background-color: #04070e;
+      background-image:
+        radial-gradient(ellipse at 25% 60%, rgba(34,211,238,0.12), transparent 55%),
+        linear-gradient(rgba(34, 211, 238, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px);
+      background-size: auto, 32px 32px, 32px 32px;
+    }
+    #loadout.on { display: block; }
+    .lo-inner { max-width: 1100px; margin: 0 auto; padding: 28px 20px 40px; display: grid; grid-template-columns: 1fr 1.15fr; gap: 28px; min-height: 100%; align-items: center; }
+    #loadout.simple .lo-inner { animation: fadeIn 0.25s ease; }
+
+    /* 왼쪽: 내 캐릭터 / 실물 */
+    .lo-left { display: flex; flex-direction: column; align-items: center; }
+    .lo-tags { align-self: stretch; display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; font-size: 12px; font-weight: bold; letter-spacing: 1px; }
+    .lo-tags span { color: var(--cyan); } .lo-tags b { color: var(--text); font-weight: normal; margin-left: 6px; }
+    .lo-stage { position: relative; height: min(420px, 56vh); aspect-ratio: 2734 / 3584; display: flex; align-items: flex-end; justify-content: center; }
+    #loChar { width: 100%; height: 100%; animation: idle 3s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(34,211,238,0.18)); }
+    #loPhoto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 1px solid var(--cyan); box-shadow: 0 0 30px rgba(34,211,238,0.25); display: none; }
+    .lo-real #loPhoto { display: block; animation: fadeIn 0.4s ease; }
+    .lo-real #loChar { display: none; }
+    .lo-ring { width: 260px; max-width: 70vw; height: 36px; margin-top: -8px; border-radius: 50%; border: 1px solid var(--cyan); box-shadow: 0 0 0 6px rgba(34,211,238,0.08), 0 0 30px rgba(34,211,238,0.35); }
+    .lo-toggle { margin-top: 16px; font-size: 12px; letter-spacing: 2px; padding: 9px 18px; background: var(--panel-2); color: var(--cyan); border: 1px solid var(--line); }
+
+    /* 오른쪽: 머리말 + 목록 + 정보창 */
+    .lo-head { position: relative; text-align: right; margin-bottom: 18px; }
+    .lo-crumb { font-size: 11px; letter-spacing: 2px; color: var(--sub); }
+    .lo-title { font-size: 34px; margin: 4px 0 2px; letter-spacing: 2px; }
+    .lo-sub { font-size: 12px; color: var(--cyan); letter-spacing: 2px; }
+    .lo-close { position: fixed; right: 24px; top: 20px; z-index: 3; font-size: 12px; letter-spacing: 2px; padding: 8px 14px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+    .lo-close:hover { color: var(--cyan); }
+
+    .lo-row {
+      display: grid; grid-template-columns: 40px 56px 1fr 40px; align-items: center;
+      margin-bottom: 6px; background: rgba(14, 21, 38, 0.85); border: 1px solid var(--line);
+      cursor: pointer; transition: background 0.2s, color 0.2s;
+    }
+    .lo-row:hover { border-color: var(--cyan); }
+    .lo-row.active { background: #dce7f1; color: #0a1220; border-color: #dce7f1; }
+    .lo-arrow { height: 64px; font-family: inherit; font-size: 20px; color: inherit; background: transparent; border: none; cursor: pointer; opacity: 0.7; }
+    .lo-arrow:hover { opacity: 1; color: var(--cyan); }
+    .lo-row.active .lo-arrow:hover { color: var(--blue); }
+    .lo-icon { display: flex; justify-content: center; color: var(--cyan); }
+    .lo-row.active .lo-icon { color: var(--blue); }
+    .lo-icon svg { width: 30px; height: 30px; }
+    .lo-text { padding: 10px 8px; min-width: 0; }
+    .lo-text small { display: block; font-size: 10px; letter-spacing: 2px; opacity: 0.7; }
+    .lo-text strong { display: block; font-size: 16px; margin: 2px 0; }
+    .lo-text em { display: block; font-style: normal; font-size: 12px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lo-dots { display: flex; gap: 4px; margin-top: 5px; }
+    .lo-dots i { width: 14px; height: 3px; background: currentColor; opacity: 0.25; }
+    .lo-dots i.on { opacity: 1; background: var(--cyan); }
+    .lo-row.active .lo-dots i.on { background: var(--blue); }
+
+    .lo-info { margin-top: 14px; background: rgba(14, 21, 38, 0.9); border: 1px solid var(--line); border-left: 3px solid var(--cyan); padding: 14px 18px; }
+    .lo-info-head { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+    .lo-info-head span { color: var(--cyan); }
+    .lo-info dl { margin: 0; display: grid; grid-template-columns: 70px 1fr; gap: 6px 12px; font-size: 13px; }
+    .lo-info dt { color: var(--sub); }
+    .lo-info dd { margin: 0; text-align: right; color: var(--text); }
+    .lo-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+    .lo-keys { font-size: 11px; color: var(--sub); letter-spacing: 1px; }
+    .lo-go { font-size: 16px; letter-spacing: 6px; padding: 14px 34px; }
+
+    /* 처음 열 때: 본화면이 조준경 안으로 빨려 들어가듯 흐려지고, 창 요소들이 잔상을 남기며 자리 잡음 */
+    #app.scope-out { animation: scopeOut 0.45s ease-in forwards; }
+    @keyframes scopeOut { to { transform: scale(1.12); filter: blur(8px) brightness(1.5); opacity: 0; } }
+    .lo-scope { position: fixed; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 2px solid var(--cyan); box-shadow: 0 0 24px var(--cyan), inset 0 0 24px rgba(34,211,238,0.4); opacity: 0; pointer-events: none; z-index: 2; }
+    #loadout.dynamic .lo-scope { animation: scopeRing 0.8s cubic-bezier(.3,0,.2,1); }
+    @keyframes scopeRing { 0% { transform: scale(0.3); opacity: 1; } 100% { transform: scale(40); opacity: 0; } }
+    #loadout.dynamic { animation: fadeIn 0.35s ease both; }
+    #loadout.dynamic .lo-left { animation: ghostLeft 0.9s cubic-bezier(.2,.8,.2,1) 0.2s both; }
+    #loadout.dynamic .lo-head { animation: ghostRight 0.8s cubic-bezier(.2,.8,.2,1) 0.3s both; }
+    #loadout.dynamic .lo-row { animation: ghostRight 0.8s cubic-bezier(.2,.8,.2,1) both; }
+    #loadout.dynamic .lo-row:nth-child(1) { animation-delay: 0.4s; }
+    #loadout.dynamic .lo-row:nth-child(2) { animation-delay: 0.5s; }
+    #loadout.dynamic .lo-row:nth-child(3) { animation-delay: 0.6s; }
+    #loadout.dynamic .lo-info, #loadout.dynamic .lo-foot { animation: ghostRight 0.8s cubic-bezier(.2,.8,.2,1) 0.7s both; }
+    #loadout.dynamic #loChar polygon { animation: partIn 0.45s ease both; animation-delay: calc(0.5s + var(--d)); }
+    /* 잔상: 같은 모양이 옆으로 흐릿하게 여러 겹 남았다가 사라짐 */
+    @keyframes ghostLeft {
+      0%   { opacity: 0; transform: translateX(-90px); filter: drop-shadow(45px 0 0 rgba(34,211,238,0.45)) drop-shadow(90px 0 0 rgba(34,211,238,0.2)) blur(2px); }
+      60%  { opacity: 1; transform: translateX(6px);  filter: drop-shadow(14px 0 0 rgba(34,211,238,0.25)) drop-shadow(28px 0 0 rgba(34,211,238,0.1)); }
+      100% { opacity: 1; transform: none; filter: none; }
+    }
+    @keyframes ghostRight {
+      0%   { opacity: 0; transform: translateX(90px); filter: drop-shadow(-45px 0 0 rgba(34,211,238,0.45)) drop-shadow(-90px 0 0 rgba(34,211,238,0.2)) blur(2px); }
+      60%  { opacity: 1; transform: translateX(-6px); filter: drop-shadow(-14px 0 0 rgba(34,211,238,0.25)) drop-shadow(-28px 0 0 rgba(34,211,238,0.1)); }
+      100% { opacity: 1; transform: none; filter: none; }
+    }
+    @keyframes partIn { 0% { opacity: 0; } 50% { opacity: 1; fill: var(--cyan); } 100% { opacity: 1; } }
+
+    /* 목록은 잠긴 상태로: 내용은 '입장'해야 공개 */
+    .lo-row { grid-template-columns: 70px 1fr 56px !important; }
+    .lo-masked { display: block; margin-top: 4px; font-size: 12px; letter-spacing: 1px; opacity: 0.7; }
+    .lo-masked i { display: inline-block; width: 90px; height: 9px; margin-right: 8px; vertical-align: -1px; background: repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 9px); opacity: 0.5; }
+    .lo-enter { text-align: center; font-size: 14px; opacity: 0.6; }
+    .lo-row.active .lo-enter { opacity: 1; color: var(--blue); }
+    .lo-lock { color: var(--cyan); }
+
+    @media (max-width: 760px) {
+      .lo-inner { grid-template-columns: 1fr; gap: 18px; padding-top: 64px; align-items: start; }
+      .lo-stage { height: 280px; }
+      .lo-ring { width: 170px; }
+      .lo-head { text-align: left; }
+      .lo-close { right: 14px; top: 14px; }
+      .lo-title { font-size: 26px; }
+      .lo-row { grid-template-columns: 34px 44px 1fr 34px; }
+      .lo-arrow { height: 58px; }
+      .lo-keys { display: none; }
+    }
+
     /* ================= ② 캐릭터 선택 ================= */
     .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
     .topbar .player { color: var(--cyan); }
@@ -121,7 +312,7 @@
     }
     .character-box { position: relative; width: 208px; height: 286px; }
     #character { width: 100%; height: 100%; }
-    #character rect { transition: fill 0.3s ease; }
+    #character polygon { transition: fill 0.3s ease; }
     .selected #character { animation: idle 2.4s ease-in-out 1.6s infinite; }
     @keyframes idle { 50% { transform: translateY(-5px); } }
 
@@ -260,7 +451,7 @@
     @keyframes equip { 50% { transform: scale(1.12); } }
 
     #selectBtn { display: block; width: 100%; margin-top: 24px; font-size: 18px; letter-spacing: 8px; }
-    .selected #selectBtn { background: var(--panel-2); color: var(--cyan); cursor: default; }
+    /* SELECT 후에도 다시 눌러 기록 선택 창을 열 수 있음 */
 
     /* ③ 메뉴: SELECT 전엔 잠겨 있음 */
     .menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 28px; }
@@ -334,6 +525,66 @@
 <body>
   <div class="grid-bg"></div>
   <canvas id="particles"></canvas>
+
+  <!-- 기록 선택 창: SELECT 누르면 열림, ESC로 닫힘 (목록은 script가 채움) -->
+  <div id="loadout">
+    <div class="lo-scope"></div>
+    <button class="btn lo-close" id="loClose">✕ 닫기 ESC</button>
+    <div class="lo-inner">
+      <!-- 왼쪽: 내 캐릭터 / 실물 -->
+      <div class="lo-left">
+        <div class="lo-tags">
+          <div><span>PLAYER 1</span><b>이환우</b></div>
+          <div><span>CLASS</span><b>전자공학</b></div>
+          <div><span>LINE</span><b>긍정은 모든 것을 긍정으로 만든다</b></div>
+        </div>
+        <div class="lo-stage" id="loStage">
+          <svg id="loChar" viewBox="30 6 140 326"></svg>
+          <img id="loPhoto" alt="이환우 실물 사진">
+        </div>
+        <div class="lo-ring"></div>
+        <button class="btn lo-toggle" id="loToggle">◉ 실물 보기</button>
+      </div>
+      <!-- 오른쪽: 기록 목록 + 정보 -->
+      <div class="lo-right">
+        <div class="lo-head">
+          <div class="lo-crumb">PLAYER 1 / 프로필 / 기록 선택</div>
+          <h2 class="lo-title">기록 선택</h2>
+          <div class="lo-sub">RECORD LOADOUT</div>
+        </div>
+        <div class="lo-list" id="loList"></div>
+        <div class="lo-info">
+          <div class="lo-info-head">정보 // <span id="loInfoName"></span></div>
+          <dl id="loInfo"></dl>
+        </div>
+        <div class="lo-foot">
+          <span class="lo-keys">↑↓ 항목 선택 · ENTER 입장 · ESC 닫기</span>
+          <button class="btn lo-go" id="loGo">입장 ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRESS START 연출 화면 (평소엔 숨김) -->
+  <div id="deploy">
+    <div class="door door-top"></div>
+    <div class="door door-bottom"></div>
+    <div class="hud">
+      <svg class="crosshair" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2">
+        <g class="ring"><circle cx="50" cy="50" r="34" stroke-dasharray="14 8"/></g>
+        <circle cx="50" cy="50" r="3" fill="currentColor"/>
+        <path d="M50 4v22M50 74v22M4 50h22M74 50h22"/>
+      </svg>
+      <div class="mission">MISSION START</div>
+      <div class="mission-sub">PLAYER 1 · LEE HWANWOO DEPLOYED</div>
+      <div class="deploy-bar"><i></i></div>
+    </div>
+    <div class="hud-corner hc-tl">HP<b>100</b></div>
+    <div class="hud-corner hc-tr">STAGE<b>AI ERA</b></div>
+    <div class="hud-corner hc-bl">CLASS<b>전자공학</b></div>
+    <div class="hud-corner hc-br">AMMO<b>∞</b></div>
+    <div class="flash"></div>
+  </div>
   <div class="scanlines"></div>
 
   <div class="wrap" id="app">
@@ -341,7 +592,7 @@
     <!-- 오른쪽 위: 처음 화면으로 돌아가기 -->
     <div class="global-nav">
       <button class="btn home-btn prd-btn" data-go="prd">▤ PRD</button>   <!-- 왼쪽 위: 기획 문서 -->
-      <button class="btn home-btn" id="homeBtn" data-go="start">⌂ 처음으로</button>
+      <button class="btn home-btn" id="homeBtn">⌂ 처음으로</button>
     </div>
 
     <!-- ===================== ① 시작 화면 ===================== -->
@@ -368,7 +619,7 @@
         <div class="panel stage">
           <span class="panel-tag label">PLAYER</span>
           <div class="character-box">
-            <svg id="character" viewBox="0 0 16 22" shape-rendering="crispEdges"></svg>
+            <svg id="character" viewBox="30 6 140 326"></svg>
             <img id="realPhoto" alt="이환우 실물 사진">   <!-- 실물 사진 (src는 script가 넣음) -->
             <div class="scan"></div>
           </div>
@@ -777,9 +1028,9 @@
                      └─ 인간 역량 탭 → 강점·재능 상세 화면
 </code></pre>
 <ul>
-<li>모든 화면 우상단: <strong>⌂ 처음으로</strong> (시작 화면 제외)</li>
+<li>모든 화면 우상단: <strong>⌂ 처음으로</strong> (시작 화면 제외) — 누르면 첫 방문처럼 전부 초기화(부팅 메시지·캐릭터 실루엣·능력치·메뉴 잠금 등) 후 시작 화면부터 다시 시작</li>
 <li>모든 화면 좌상단: <strong>PRD</strong> (이 문서 열람)</li>
-<li>상세 화면 좌상단: <strong>◀ BACK</strong> (캐릭터 선택으로 복귀)</li>
+<li>상세 화면 좌상단: <strong>◀ BACK</strong> (캐릭터 선택으로 복귀, 기록 선택 창에서 입장했다면 그 창으로 복귀)</li>
 <li>주소 끝 <code>#이름</code>으로 화면 전환 → 휴대폰 뒤로가기 동작</li>
 </ul>
 <hr />
@@ -788,17 +1039,27 @@
 <ul>
 <li>부팅 메시지 3줄 순차 출력 ("플레이어 데이터 동기화 중..." 등)</li>
 <li>이름 "LEE HWANWOO" 글리치 효과 후 선명하게 등장 (레트로 → 디지털 전환 표현)</li>
-<li><strong>PRESS START</strong> 버튼 / Enter 키로 다음 화면 이동</li>
+<li><strong>PRESS START</strong> 버튼 / Enter 키 → FPS 출격 연출 후 캐릭터 선택 화면 이동</li>
 </ul>
+<p><strong>FPS 출격 연출 (약 3초)</strong>
+- 화면 강한 흔들림 + 흰 섬광
+- 방폭문이 닫힌 화면에 회전하는 조준선 등장, 네 귀퉁이 HUD 정보(HP 100 / STAGE AI ERA / CLASS 전자공학 / AMMO ∞)
+- "MISSION START" 문구가 크게 찍히며 2차 흔들림, "PLAYER 1 · LEE HWANWOO DEPLOYED" + 로딩바
+- 방폭문이 위아래로 갈라지며 열림
+- 패널 조립: 좌측 패널은 왼쪽에서, 우측 패널은 오른쪽에서 기울어진 채 날아와 맞물림, 메뉴 3개는 아래에서 순차 등장, 맞물릴 때 짧은 흔들림
+- 문이 열린 뒤 대사·능력치·장비 효과 시작
+- '움직임 줄이기' 설정 시 연출 없이 바로 이동</p>
 <h3>4.2 캐릭터 선택 화면 (<code>#select</code>)</h3>
 <p><strong>페이지 진입 즉시 실행</strong>
 - 대사 한 글자씩 타이핑: "긍정은 모든 것을 긍정으로 만든다"
 - 능력치 막대 10칸 순차 채우기 + 점수 카운트업
 - 장비 슬롯 3개 장착 효과</p>
 <p><strong>SELECT 버튼 클릭 시 실행</strong>
-- 회색 실루엣 픽셀 캐릭터가 무작위 순서로 색을 입으며 등장
-- 스캔 광선, 홀로그램 발판 효과
-- 하단 메뉴 3개 잠금 해제 (선택 전에는 🔒 상태)</p>
+- 누르기 전까지 본화면 그대로 유지 (캐릭터는 실루엣)
+- 누르면 바로 <strong>기록 선택 창</strong>(게임 새 화면)으로 전환 (4.3 참고)
+- 창을 닫으면 본화면은 선택 완료 상태: 캐릭터 색 표시, 하단 메뉴 3개 잠금 해제
+- 두 번째부터 SELECT 클릭: 전환 효과 없이 창만 바로 열림
+- 캐릭터: FPS 게임 오퍼레이터 느낌의 로우폴리(각진 면) 전신 그림 — 검은 머리, 안경, 흰 티, 재킷, 전술 조끼, 시안색 발광 포인트, 웃는 표정</p>
 <p><strong>실물 보기 (SELECT 이후 표시)</strong>
 - ◉ 실물 보기 버튼: 픽셀 캐릭터 → 실물 사진 전환 (스캔 광선 + 위에서부터 선명해지는 효과)
 - ◉ 캐릭터 보기 버튼으로 다시 픽셀 캐릭터 복귀
@@ -833,7 +1094,19 @@
 - GITHUB: https://github.com/HwanwooLee
 - SNS: 주소 미정
 - MAIL: lhwhappy11@naver.com</p>
-<h3>4.3 메뉴 상세 화면</h3>
+<h3>4.3 기록 선택 창 (새 창)</h3>
+<ul>
+<li>게임 장비 선택 화면 구성을 참고하되 좌우 반전: <strong>왼쪽 = 내 캐릭터/실물</strong>, <strong>오른쪽 = 기록 목록·정보창</strong></li>
+<li>전환 효과(처음 열 때): 본화면이 조준경 속으로 확대·흐려짐 → 가운데서 조준 링이 퍼짐 → 캐릭터와 목록이 시안색 <strong>잔상</strong>을 남기며 자리 잡음, 캐릭터 조각이 하나씩 켜짐 (흔들림 없음)</li>
+<li>왼쪽: PLAYER 1 / CLASS / LINE 정보, 캐릭터(◉ 실물 보기로 사진 전환), 발광 발판</li>
+<li>오른쪽: 경로 표시(PLAYER 1 / 프로필 / 기록 선택), 제목, 기록 3줄(수상 내역·교육 이수·대외활동)</li>
+<li>줄에는 분야명과 기록 수만 표시, 세부 내용은 <strong>가림 처리(입장 시 공개)</strong></li>
+<li>아래 정보창: 분야 / 기록 수 / 상태(🔒 입장하면 모두 공개)</li>
+<li><strong>입장 ▶</strong>: 해당 화면 맨 위부터 모든 기록 표시</li>
+<li>키보드: ↑↓ 줄 선택 / Enter 입장 / <strong>ESC 닫기</strong></li>
+<li>입장한 화면에서 <strong>◀ BACK</strong> → 기록 선택 창으로 복귀</li>
+</ul>
+<h3>4.4 메뉴 상세 화면</h3>
 <ul>
 <li>카드형 목록, 카드 클릭 시 상세 내용 펼침 (<code>&lt;details&gt;</code>)</li>
 </ul>
@@ -866,13 +1139,13 @@
 <ul>
 <li>바로가기: 수상 내역 창의상 카드 → 대외활동 AI 신호등 카드 자동 펼침·강조</li>
 </ul>
-<h3>4.4 강점·재능 상세 화면 (<code>#str-이름</code>)</h3>
+<h3>4.5 강점·재능 상세 화면 (<code>#str-이름</code>)</h3>
 <ul>
 <li>구성: 구분(CORE STRENGTH / TALENT) · 이름 · 한 줄 설명 · MY PROOF(본인 경험 근거) · 강점 진단 원문 이미지</li>
 <li>대상: 탐구, 동기부여, 고찰, 논리, 신중, 완벽, 공감, 양성(인재 양성)</li>
 <li>원문 이미지는 장점 문단만 잘라 사용 ('부정적 모습' 문단, 신중 첫 문단 제외)</li>
 </ul>
-<h3>4.5 PRD 화면 (<code>#prd</code>)</h3>
+<h3>4.6 PRD 화면 (<code>#prd</code>)</h3>
 <ul>
 <li>좌상단 PRD 버튼으로 이 문서를 페이지 안에서 열람</li>
 </ul>
@@ -912,7 +1185,7 @@
 </tr>
 <tr>
 <td>장식</td>
-<td>모서리 깎인 패널, 꺾쇠 테두리, 픽셀 캐릭터 / 과한 그라데이션 지양</td>
+<td>모서리 깎인 패널, 꺾쇠 테두리, 로우폴리 오퍼레이터 캐릭터 / 과한 그라데이션 지양</td>
 </tr>
 <tr>
 <td>접근성</td>
@@ -924,7 +1197,7 @@
 <h2>7. 기술 명세</h2>
 <ul>
 <li>파일: <code>index.html</code> 단일 파일 (HTML + CSS + JavaScript 포함)</li>
-<li>캐릭터: 16×22 픽셀 지도를 SVG 네모 칸으로 그림</li>
+<li>캐릭터: 로우폴리 다각형 목록(<code>const PARTS</code> = [꼭짓점 좌표, 색])을 SVG로 그림</li>
 <li>아이콘: 인라인 SVG / 원문 이미지·실물 사진: data URI로 파일 안에 포함</li>
 <li>화면 전환: <code>location.hash</code> 기반</li>
 <li>반응형: 폭 760px 이하에서 1열 배치</li>
@@ -934,7 +1207,8 @@
 <h2>8. 배포·운영</h2>
 <ul>
 <li>배포: Claude 아티팩트 공개 링크 (로그인 없이 열람 가능)</li>
-<li>원본 파일: 바탕화면 <code>한양대 AI 부트캠프(바이브 코딩)/my_profile 만들기/index.html</code></li>
+<li>원본 파일: <code>C:\한양대 AI 부트캠프(바이브 코딩)\my-profile\index.html</code></li>
+<li>GitHub 저장소: https://github.com/HwanwooLee/my-profile (GitHub Pages 배포)</li>
 <li>수정 흐름: Claude 대화에서 수정 요청 → 폴더 파일과 공개 링크 동시 갱신 (링크 주소 유지)</li>
 <li>직접 수정 시: 폴더 파일만 바뀌므로 Claude에 링크 업데이트 요청 필요</li>
 </ul>
@@ -1036,10 +1310,14 @@
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 0);   // 브라우저가 #이름 위치로 자동 스크롤하는 것 되돌리기
       if (id === "start") runBoot();
-      if (id === "select") revealInfo();   // 들어오자마자 대사·능력치·장비 효과
+      if (id === "select") setTimeout(revealInfo, deploying ? 1500 : 0);
+      if (id === "select" && returnToLoadout) { returnToLoadout = false; setTimeout(() => openLoadout(false), 0); }   // 들어오면 대사·능력치·장비 효과 (출격 연출 중이면 문 열린 뒤)
     }
     window.addEventListener("hashchange", showScreen);
-    function go(id) { location.hash = id; }
+    function go(id) {
+      if (location.hash.replace("#", "") === id) showScreen();   // 같은 주소면 직접 화면 갱신
+      else location.hash = id;
+    }
 
     // data-go 가 붙은 버튼을 누르면 해당 화면으로
     document.querySelectorAll("[data-go]").forEach(el => {
@@ -1067,6 +1345,11 @@
       });
     });
 
+    // 예약된 효과들을 모아두었다가 '처음으로' 누르면 한 번에 취소
+    const timers = [];
+    function later(fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t; }
+    let typingTimer = null;
+
     /* ---------- 1. 시작 화면: 부팅 메시지 ---------- */
     const BOOT_LINES = [
       "> 플레이어 데이터 동기화 중...",
@@ -1079,67 +1362,117 @@
       booted = true;
       const boot = document.getElementById("boot");
       BOOT_LINES.forEach((line, i) => {
-        setTimeout(() => {
+        later(() => {
           const div = document.createElement("div");
           div.innerHTML = line + ' <span class="ok">OK</span>';
           boot.appendChild(div);
         }, 400 + i * 550);
       });
       const after = 400 + BOOT_LINES.length * 550;
-      setTimeout(() => document.getElementById("titleBig").classList.add("show"), after);
-      setTimeout(() => document.getElementById("subtitle").classList.add("show"), after);
-      setTimeout(() => document.getElementById("startBtn").classList.add("show"), after);
+      later(() => document.getElementById("titleBig").classList.add("show"), after);
+      later(() => document.getElementById("subtitle").classList.add("show"), after);
+      later(() => document.getElementById("startBtn").classList.add("show"), after);
     }
-    document.getElementById("startBtn").addEventListener("click", () => go("select"));
+    /* ---------- PRESS START → FPS 출격 연출 ---------- */
+    const app = document.getElementById("app");
+    const deployEl = document.getElementById("deploy");
+    let deploying = false;
+    function shake(el, kind) {                       // kind: "hard" 또는 "soft"
+      el.classList.remove("shake-hard", "shake-soft"); void el.offsetWidth;
+      el.classList.add("shake-" + kind);
+    }
+    function deploy() {
+      if (deploying) return;
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) { go("select"); return; }
+      deploying = true;
+      deployEl.classList.remove("open");
+      // 애니메이션 다시 재생되도록 연출 화면 새로 켜기
+      deployEl.classList.remove("on"); void deployEl.offsetWidth; deployEl.classList.add("on");
+      shake(app, "hard");                                       // 1) 쾅! 흔들림 + 섬광
+      setTimeout(() => shake(deployEl, "hard"), 380);           // 2) MISSION START 찍힐 때 한 번 더
+      setTimeout(() => {                                        // 3) 뒤에서 캐릭터 화면 준비
+        go("select");
+        selectScreen.classList.add("assemble");
+      }, 1300);
+      setTimeout(() => deployEl.classList.add("open"), 1450);   // 4) 방폭문 열림
+      setTimeout(() => shake(app, "soft"), 1950);               // 5) 패널 맞물릴 때 '철컥'
+      setTimeout(() => {                                        // 6) 정리
+        deployEl.classList.remove("on", "open");
+        selectScreen.classList.remove("assemble");
+        deploying = false;
+      }, 2900);
+    }
+    document.getElementById("startBtn").addEventListener("click", deploy);
 
     /* ---------- 2. 캐릭터 그리기 ---------- */
     const QUOTE = "긍정은 모든 것을 긍정으로 만든다";   // 대사
 
-    // 픽셀 지도: 글자 하나 = 네모 한 칸 (가로 16 × 세로 22)
-    // H 머리, S 피부, E 눈, M 입, J 재킷, L 재킷 포인트, W 셔츠, P 바지, B 신발, . 빈칸
-    const MAP = [
-      "......HHHH......",
-      "....HHHHHHHH....",
-      "...HHHHHHHHHH...",
-      "...HHHHHHHHHH...",
-      "...HSSSSSSSSH...",
-      "...SSSSSSSSSS...",
-      "...SSESSSSESS...",
-      "...SSSSSSSSSS...",
-      "....SSSMMSSS....",
-      ".....SSSSSS.....",
-      "......SSSS......",
-      "...JJJWWWWJJJ...",
-      "..JJJJWWWWJJJJ..",
-      "..JJJJJWWJJJJJ..",
-      ".JJLJJJWWJJJLJJ.",
-      ".JJ.JJJJJJJJ.JJ.",
-      ".SS.JJJJJJJJ.SS.",
-      "....PPPPPPPP....",
-      "....PPP..PPP....",
-      "....PPP..PPP....",
-      "....PPP..PPP....",
-      "...BBBB..BBBB..."
+    // 캐릭터: FPS 게임 오퍼레이터 느낌의 로우폴리(각진 면) 그림
+    // [꼭짓점 좌표, 색] 목록. 위에서부터 다리 → 몸통 → 팔 → 얼굴 → 머리 → 안경 → 입 순서로 겹쳐 그림
+    const PARTS = [
+      ["70,196 99,196 97,300 76,300", "#2c323a"],
+      ["101,196 130,196 124,300 103,300", "#22272e"],
+      ["75,236 95,236 94,256 76,256", "#1a1e24"],
+      ["105,236 125,236 123,256 106,256", "#16191e"],
+      ["76,262 96,262 96,266 76,266", "#22d3ee"],
+      ["74,300 97,300 99,322 66,322 68,310", "#111317"],
+      ["103,300 126,300 134,322 101,322", "#0c0e11"],
+      ["66,318 99,318 99,323 66,323", "#3a3f46"],
+      ["101,318 134,318 134,323 101,323", "#30353b"],
+      ["66,186 134,186 134,197 66,197", "#15181c"],
+      ["95,187 105,187 105,196 95,196", "#7b8491"],
+      ["58,104 90,94 100,100 100,190 64,188 56,140", "#3d4652"],
+      ["142,104 110,94 100,100 100,190 136,188 144,140", "#2a3039"],
+      ["90,96 110,96 105,128 100,134 95,128", "#e9ebee"],
+      ["100,100 110,96 105,128 100,134", "#cfd3d8"],
+      ["69,126 131,126 129,178 71,178", "#1d2229"],
+      ["69,126 100,126 100,178 71,178", "#232931"],
+      ["73,150 93,150 93,173 73,173", "#2b323b"],
+      ["107,150 127,150 127,173 107,173", "#262c34"],
+      ["71,134 129,134 129,139 71,139", "#22d3ee"],
+      ["76,142 88,142 88,147 76,147", "#3b82f6"],
+      ["112,142 124,142 124,147 112,147", "#1e3a5f"],
+      ["93,101 94.6,101 100,112.5 105.4,101 107,101 100,115", "#5a606a"],
+      ["56,106 69,104 70,158 57,166 48,150", "#434d5a"],
+      ["48,151 58,165 56,212 44,210", "#38414c"],
+      ["49,168 58,170 58,176 49,174", "#22d3ee"],
+      ["44,210 56,212 57,229 45,227", "#15181c"],
+      ["46,150 48,150 44,210 42,210", "#22d3ee"],
+      ["144,106 131,104 130,158 143,166 152,150", "#2c333c"],
+      ["152,151 142,165 144,212 156,210", "#252b33"],
+      ["144,212 156,210 155,227 143,229", "#0f1114"],
+      ["92,82 108,82 110,97 90,97", "#d7a985"],
+      ["100,82 108,82 110,97 100,97", "#c99a77"],
+      ["72,55 77,52 77,67 72,64", "#e0b38f"],
+      ["123,52 128,55 128,64 123,67", "#c99a77"],
+      ["76,46 124,44 126,62 120,78 100,87 80,78 74,62", "#edc6a3"],
+      ["100,44 124,44 126,62 120,78 100,87", "#ddb28f"],
+      ["80,78 100,87 120,78 112,84 100,90 88,84", "#d3a683"],
+      ["72,40 79,22 100,13 123,19 132,37 130,54 124,44 100,40 77,46 72,57", "#22262d"],
+      ["79,22 100,13 112,16 100,24 86,30", "#353b45"],
+      ["76,46 101,36 124,44 117,51 101,46 83,52", "#1a1d23"],
+      ["79,55 98,55 97,65 80,65", "#0b0d10"],
+      ["102,55 121,55 120,65 103,65", "#0b0d10"],
+      ["81,57 96,57 95,63 82,63", "#a9bccb"],
+      ["104,57 119,57 118,63 105,63", "#97abbb"],
+      ["83,57.5 88,57.5 85,61.5", "#e0f7ff"],
+      ["106,57.5 111,57.5 108,61.5", "#e0f7ff"],
+      ["97,58 103,58 103,60 97,60", "#0b0d10"],
+      ["92,73 108,73 105,77 95,77", "#b8705c"],
+      ["94,73 106,73 105,74.5 95,74.5", "#f4f1ec"]
     ];
-    const COLORS = {
-      H: "#3b4663", S: "#f3cba5", E: "#1e2633", M: "#c97b5d",
-      J: "#3b82f6", L: "#22d3ee", W: "#e6edf7", P: "#475569", B: "#94a3b8"
-    };
     const SILHOUETTE = "#1f2a44";   // 선택 전 어두운 실루엣
 
     const svg = document.getElementById("character");
-    const pixels = [];
-    MAP.forEach((row, y) => {
-      [...row].forEach((ch, x) => {
-        if (ch === ".") return;
-        const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        r.setAttribute("x", x); r.setAttribute("y", y);
-        r.setAttribute("width", 1); r.setAttribute("height", 1);
-        r.setAttribute("fill", SILHOUETTE);
-        r.dataset.color = COLORS[ch];
-        svg.appendChild(r);
-        pixels.push(r);
-      });
+    const pixels = [];               // 이름은 pixels 그대로 두었지만 이제 다각형 조각들
+    PARTS.forEach(([pts, color]) => {
+      const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      poly.setAttribute("points", pts);
+      poly.setAttribute("fill", SILHOUETTE);
+      poly.dataset.color = color;
+      poly.style.setProperty("--d", (Math.random() * 0.7).toFixed(2) + "s");   // 등장 순서(무작위)
+      svg.appendChild(poly);
+      pixels.push(poly);
     });
 
     // 능력치 칸 10개씩 만들기
@@ -1172,7 +1505,7 @@
         const blocks = stat.querySelectorAll(".block");
         const scoreEl = stat.querySelector(".stat-score");
         for (let i = 0; i < filled; i++) {
-          setTimeout(() => {
+          later(() => {
             blocks[i].classList.add("on", "top");
             if (i > 0) blocks[i - 1].classList.remove("top");
             scoreEl.textContent = Math.round(score * (i + 1) / filled);
@@ -1182,43 +1515,105 @@
 
       // 장비 장착
       document.querySelectorAll(".slot").forEach((slot, i) => {
-        setTimeout(() => slot.classList.add("equip"), 1300 + i * 200);
+        later(() => slot.classList.add("equip"), 1300 + i * 200);
       });
 
       // 대사 타이핑
       const quoteEl = document.getElementById("quoteText");
       let n = 0;
-      const typing = setInterval(() => {
+      typingTimer = setInterval(() => {
         quoteEl.textContent = QUOTE.slice(0, ++n);
-        if (n >= QUOTE.length) clearInterval(typing);
+        if (n >= QUOTE.length) clearInterval(typingTimer);
       }, 70);
     }
 
     // (2) SELECT 눌렀을 때: 캐릭터 등장 + 메뉴 잠금 해제
     function selectCharacter() {
-      if (selected) return;
+      if (selected) { openLoadout(false); return; }   // 두 번째부터는 창만 바로 열기
       selected = true;
+      // 본화면 뒤쪽 상태는 조용히 바로 '선택 완료'로 (창을 닫았을 때 보이도록)
       revealInfo();
       selectScreen.classList.add("selected");
-      selectBtn.textContent = "READY";
-      const status = document.getElementById("status");
-      status.textContent = "LOADING...";
-
-      // 픽셀이 무작위 순서로 색을 찾아가며 등장
-      pixels.slice().sort(() => Math.random() - 0.5).forEach((p, i) => {
-        setTimeout(() => p.setAttribute("fill", p.dataset.color), 200 + i * 4);
-      });
-      setTimeout(() => { status.textContent = "PLAYER 1 · READY"; }, 1500);
-
-      // 메뉴 잠금 해제 (지금처럼)
-      document.querySelectorAll(".menu-item").forEach((m, i) => {
-        setTimeout(() => { m.classList.remove("locked"); m.classList.add("unlock"); }, 1500 + i * 200);
-      });
-      setTimeout(() => {
-        document.getElementById("menuHint").textContent = "MENU UNLOCKED · 원하는 기록을 선택하세요";
-      }, 1500);
+      pixels.forEach(p => p.setAttribute("fill", p.dataset.color));
+      document.getElementById("status").textContent = "PLAYER 1 · READY";
+      selectBtn.textContent = "SELECT ▶ 기록 선택";
+      document.querySelectorAll(".menu-item").forEach(m => m.classList.remove("locked"));
+      document.getElementById("menuHint").textContent = "MENU UNLOCKED · 원하는 기록을 선택하세요";
+      openLoadout(true);   // 게임 새 창 (처음엔 조준 전환 효과)
     }
     selectBtn.addEventListener("click", selectCharacter);
+
+    /* ---------- 기록 선택 창 ---------- */
+    const loadout = document.getElementById("loadout");
+    const CATS = [
+      { key: "awards",     ko: "수상 내역", en: "AWARDS",   icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="5"/><path d="M8.5 13.5L7 21l5-3 5 3-1.5-7.5"/></svg>` },
+      { key: "training",   ko: "교육 이수", en: "TRAINING", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/></svg>` },
+      { key: "activities", ko: "대외활동",  en: "QUESTS",   icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 21V4M5 4h12l-2 4 2 4H5"/></svg>` }
+    ];
+    // 각 화면의 카드에서 제목·기간·결과를 읽어옴 → 카드만 고치면 여기도 자동 반영
+    CATS.forEach(c => {
+      c.items = [...document.querySelectorAll("#" + c.key + " details.card")].map((card, n) => {
+        if (!card.id) card.id = c.key + "-" + n;
+        return {
+          id: card.id,
+          title: card.querySelector(".card-title").textContent,
+          meta: card.querySelector(".card-meta").textContent,
+          tag: card.querySelector(".card-tag").textContent
+        };
+      });
+      c.idx = 0;
+    });
+    let loRow = 0;
+    const loList = document.getElementById("loList");
+    CATS.forEach((c, r) => {
+      const row = document.createElement("div");
+      row.className = "lo-row";
+      row.innerHTML = `<div class="lo-icon">${c.icon}</div>
+        <div class="lo-text"><small>${c.en} · ${c.items.length} RECORDS</small><strong>${c.ko}</strong>
+        <span class="lo-masked"><i></i>입장 시 공개</span></div>
+        <div class="lo-enter">▶</div>`;
+      row.addEventListener("click", () => { loRow = r; renderLoadout(); });
+      row.addEventListener("dblclick", enterRecord);
+      loList.appendChild(row);
+    });
+    function renderLoadout() {
+      [...loList.children].forEach((row, r) => row.classList.toggle("active", r === loRow));
+      const c = CATS[loRow];
+      document.getElementById("loInfoName").textContent = c.ko;
+      document.getElementById("loInfo").innerHTML =
+        `<dt>분야</dt><dd>${c.en}</dd><dt>기록 수</dt><dd>${c.items.length}건</dd><dt>상태</dt><dd class="lo-lock">🔒 입장하면 모두 공개</dd>`;
+    }
+    // 왼쪽 캐릭터: 메인 화면 캐릭터를 그대로 복사해서 사용
+    function syncLoadoutChar() {
+      document.getElementById("loChar").innerHTML = document.getElementById("character").innerHTML;
+      const isReal = stage.classList.contains("real");
+      document.getElementById("loStage").classList.toggle("lo-real", isReal);
+      document.getElementById("loToggle").textContent = isReal ? "◉ 캐릭터 보기" : "◉ 실물 보기";
+    }
+    function openLoadout(dynamic) {
+      syncLoadoutChar();
+      renderLoadout();
+      loadout.classList.remove("on", "dynamic", "simple"); void loadout.offsetWidth;
+      if (!dynamic) { loadout.classList.add("on", "simple"); return; }
+      app.classList.add("scope-out");                       // 본화면이 조준경 속으로 흐려짐
+      later(() => {
+        loadout.classList.add("on", "dynamic");             // 게임 창 등장 (잔상 효과)
+        app.classList.remove("scope-out");
+      }, 380);
+    }
+    function closeLoadout() { loadout.classList.remove("on", "dynamic", "simple"); app.classList.remove("scope-out"); }
+    let returnToLoadout = false;                            // 입장 후 BACK 누르면 기록 선택 창으로 돌아오기
+    function enterRecord() {
+      const c = CATS[loRow];
+      closeLoadout();
+      returnToLoadout = true;
+      document.querySelectorAll("#" + c.key + " details.card").forEach(d => d.open = false);
+      go(c.key);                                            // 해당 화면 맨 위부터 전부 보이게
+    }
+    document.getElementById("loGo").addEventListener("click", enterRecord);
+    document.getElementById("loClose").addEventListener("click", closeLoadout);
+    document.getElementById("loPhoto").src = PROFILE_PHOTO;
+    document.getElementById("loToggle").addEventListener("click", () => { realBtn.click(); syncLoadoutChar(); });
 
     // 실물 보기 ↔ 캐릭터 보기 전환
     const stage = document.querySelector(".stage");
@@ -1232,8 +1627,18 @@
       document.getElementById("status").textContent = isReal ? "PLAYER 1 · REAL MODE" : "PLAYER 1 · READY";
     });
     document.addEventListener("keydown", e => {
+      if (loadout.classList.contains("on")) {          // 기록 선택 창이 열려 있을 때
+        const c = CATS[loRow];
+        if (e.key === "Escape") closeLoadout();
+        else if (e.key === "ArrowUp") { loRow = (loRow + 2) % 3; renderLoadout(); }
+        else if (e.key === "ArrowDown") { loRow = (loRow + 1) % 3; renderLoadout(); }
+        else if (e.key === "Enter") enterRecord();
+        else return;
+        e.preventDefault();
+        return;
+      }
       if (e.key !== "Enter") return;
-      if (document.getElementById("start").classList.contains("active")) go("select");
+      if (document.getElementById("start").classList.contains("active")) deploy();
       else if (selectScreen.classList.contains("active")) selectCharacter();
     });
 
@@ -1317,6 +1722,39 @@
     resize();
     addEventListener("resize", resize);
     if (!matchMedia("(prefers-reduced-motion: reduce)").matches) draw();
+
+    /* ---------- '처음으로': 첫 방문처럼 모든 상태 초기화 ---------- */
+    function resetAll() {
+      timers.forEach(clearTimeout); timers.length = 0;
+      clearInterval(typingTimer);
+      closeLoadout();
+      deployEl.classList.remove("on", "open"); deploying = false;
+      // 시작 화면
+      booted = false;
+      document.getElementById("boot").innerHTML = "";
+      ["titleBig", "subtitle", "startBtn"].forEach(id => document.getElementById(id).classList.remove("show"));
+      // 캐릭터 선택 화면
+      infoShown = false; selected = false;
+      selectScreen.classList.remove("info-on", "selected", "assemble");
+      stage.classList.remove("real");
+      realBtn.textContent = "◉ 실물 보기";
+      pixels.forEach(p => p.setAttribute("fill", SILHOUETTE));
+      document.querySelectorAll(".block").forEach(b => b.classList.remove("on", "top"));
+      document.querySelectorAll(".stat-score").forEach(el => el.textContent = "0");
+      document.querySelectorAll(".slot").forEach(el => el.classList.remove("equip"));
+      document.getElementById("quoteText").textContent = "";
+      document.getElementById("status").textContent = "PRESS SELECT";
+      selectBtn.textContent = "SELECT";
+      document.querySelectorAll(".menu-item").forEach(m => { m.classList.add("locked"); m.classList.remove("unlock"); });
+      document.getElementById("menuHint").textContent = "SELECT 후 메뉴가 열립니다";
+      document.querySelector('.tab[data-tab="job"]').click();
+      document.querySelectorAll("details.card").forEach(d => d.open = false);
+      loRow = 0; returnToLoadout = false; app.classList.remove("scope-out");
+    }
+    document.getElementById("homeBtn").addEventListener("click", () => {
+      resetAll();
+      if (location.hash.replace("#", "") === "start") showScreen(); else go("start");
+    });
 
     // 처음 열 때 주소에 맞는 화면 보여주기
     showScreen();
